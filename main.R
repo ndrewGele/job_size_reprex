@@ -59,8 +59,16 @@ final_wflow <- finalize_workflow(glm_wflow, best_wflow)
 fit_wflow <- fit(final_wflow, data = dia_train)
 butchered_wflow <- butcher::axe_data(fit_wflow)
 
-if(!dir.exists('./results')) dir.create('./results')
 dttm <- format(Sys.time(), '%Y_%m_%d_%H_%M_%S')
-saveRDS(diamonds, glue::glue('./results/diamonds_{dttm}.RDS'))
-saveRDS(fit_wflow, glue::glue('./results/fit_wflow_{dttm}.RDS'))
-saveRDS(butchered_wflow, glue::glue('./results/butchered_wflow_{dttm}.RDS'))
+new_dir <- glue::glue('./results_{dttm}')
+if(!dir.exists(new_dir)) dir.create(new_dir)
+
+saveRDS(diamonds, glue::glue('./{new_dir}/diamonds.RDS'))
+saveRDS(fit_wflow, glue::glue('./{new_dir}/fit_wflow.RDS'))
+saveRDS(butchered_wflow, glue::glue('./{new_dir}/butchered_wflow.RDS'))
+
+size <- lapply(list.files(new_dir, full.names = TRUE), file.size) %>% 
+  unlist() %>% 
+  sum()
+
+file.create(file.path(new_dir, paste0(size, '.txt')))
