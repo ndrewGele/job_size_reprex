@@ -2,6 +2,11 @@ library(tidymodels)
 library(modeldata)
 library(glmnet)
 
+parallelly::availableCores() %>% 
+  `*`(.5) %>% 
+  parallelly::makeClusterPSOCK() %>% 
+  doParallel::registerDoParallel()
+
 # Load data
 data(diamonds)
 
@@ -32,7 +37,7 @@ dia_pre_proc <-
   step_dummy(all_nominal_predictors())
 
 glm_mod <-
-  parsnip::logistic_reg(mode = 'classification', engine = 'glm', penalty = tune(), mixture = tune()) %>%
+  parsnip::logistic_reg(mode = 'classification', penalty = tune(), mixture = tune()) %>%
   set_engine('glmnet')
 
 glm_wflow <-
@@ -46,20 +51,19 @@ search_res <-
   glm_wflow %>% 
   tune_bayes(
     resamples = folds,
-    initial = 10,
-    iter = 25,
+    initial = 8,
+    iter = 20,
     metrics = metric_set(roc_auc),
     control = control_bayes(no_improve = 5, verbose = TRUE)
   )
 
 
 
-best_wflow <- select_best(search_res)
-final_wflow <- finalize_workflow(glm_wflow, best)
+best_wflow <- select_best(search_res, metric = 'roc_auc')
+final_wflow <- finalize_workflow(glm_wflow, best_wflow)
 fit_wflow <- fit(final_wflow, data = dia_train)
-predicted <- predict(fit_wflow, dia_test)
-
 butchered_wflow <- butcher::axe_data(fit_wflow)
 
-saveRDS(fit_wflow, glue::glue('./results/fit_wflow_{Sys.Date()}.RDS'))
-saveRDS(butchered_wflow, glue::glue('./results/butchered_wflow_{Sys.Date()}.RDS'))
+if(!dir.exists('./results')) dir.create('./results')
+saveRDS(fit_wflow, glue::glue('./results/fit_wflow_{Sys.time()}.RDS'))
+saveRDS(butchered_wflow, glue::glue('./results/butchered_wflow_{Sys.time()}.RDS'))
