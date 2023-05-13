@@ -10,11 +10,6 @@ parallelly::availableCores() %>%
 # Load data
 data(diamonds)
 
-for(i in 1:5) {
-  rand_var_name <- sample(LETTERS, 5) %>% paste(collapse = '')
-  diamonds[rand_var_name] <- runif(n = nrow(diamonds), min = sample(-10:-1, 1), max = sample(1:10, 1))
-}
-
 diamonds <- mutate(
   diamonds, 
   cut = case_when(
